@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "YT Cleanse By Keyword",
+  "description": "Cleanse your YouTube search and watch history by keyword(s)",
+  "version": "0.0.1",
+  "action": {
+    "default_popup": "popup/index.html",
+    "default_icon": "assets/ytcbk_icon.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://myactivity.google.com/product/youtube"],
+      "js": ["scripts/yt-history/inject.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["scripts/*"],
+      "matches": ["*://myactivity.google.com/*"]
+    }
+  ],
+  "permissions": ["activeTab", "scripting"]
+}
