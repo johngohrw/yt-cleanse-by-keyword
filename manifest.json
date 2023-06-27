@@ -23,7 +23,7 @@
   "web_accessible_resources": [
     {
       "resources": ["scripts/*"],
-      "matches": ["*://myactivity.google.com/*"]
+      "matches": ["*://myactivity.google.com/product/youtube"]
     }
   ],
   "permissions": ["activeTab", "scripting"]
