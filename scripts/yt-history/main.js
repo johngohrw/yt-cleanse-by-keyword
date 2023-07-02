@@ -1,5 +1,54 @@
 import { setInputsDisabled, startLoadingMore } from "./utils.js";
 
+const inputIDs = [
+  "ytcbk-search-input",
+  "ytcbk-search-button",
+  "ytcbk-status-dot",
+  "ytcbk-status-text",
+];
+
+const states = {
+  INITIAL_LOAD: {
+    status_text: "loading...",
+    inputs_disabled: true,
+    show_additional_status: false,
+  },
+  VIDEO_FETCH: {
+    status_text: "fetching all videos...",
+    inputs_disabled: true,
+    show_additional_status: false,
+  },
+  READY: {
+    status_text: "ready to search",
+    inputs_disabled: false,
+    show_additional_status: false,
+  },
+  CLEANSING: {
+    status_text: "cleansing in progress...",
+    inputs_disabled: true,
+    show_additional_status: true,
+  },
+  POST_CLEANSE: {
+    status_text: "cleansing finished!",
+    inputs_disabled: false,
+    show_additional_status: false,
+  },
+};
+
+const setState = (stateID) => {
+  const { status_text, inputs_disabled, show_additional_status } =
+    states[stateID];
+  setInputsDisabled(inputIDs, inputs_disabled);
+  document.getElementById("ytcbk-status-text").textContent = status_text;
+  if (show_additional_status) {
+    document.getElementById("ytcbk-status-additional").classList.add("shown");
+  } else {
+    document
+      .getElementById("ytcbk-status-additional")
+      .classList.remove("shown");
+  }
+};
+
 const panelStyleContent = /*css*/ `
   :root {
     --panel-bg-color: #222940;
@@ -15,6 +64,7 @@ const panelStyleContent = /*css*/ `
     right: 1rem;
     padding: 1rem;
     color: white;
+    width: 320px;
   }
   
 
@@ -45,34 +95,20 @@ const panelStyleContent = /*css*/ `
     animation: blink 1s infinite;  
   }
 
-  #ytcbk-status-text::after {
-    content: "ready to search"
+  #ytcbk-status-additional {
+    display: none
   }
-  #ytcbk-status-text.disabled::after {
-    content: "loading videos..."
+  #ytcbk-status-additional.shown {
+    display: block
   }
-  #ytcbk-status-text.disabled.cleansing::after {
-    content: "cleansing in progress, please wait..."
+  #ytcbk-status-text-additional {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+    font-size: 11px;
+    color: grey;
   }
-
-  .deleting {
-    animation: deleting 1s infinite;
-    background: red;
-  }
-
-  @keyframes deleting {
-    from {
-      opacity: 1
-    }
   
-    50% {
-      opacity: 0.2
-    }
-  
-    to {
-      opacity: 1
-    }
-  }
   
   @keyframes blink {
     from {
@@ -89,26 +125,9 @@ const panelStyleContent = /*css*/ `
   }
 `;
 
-const inputIDs = [
-  "ytcbk-search-input",
-  "ytcbk-search-button",
-  "ytcbk-status-dot",
-  "ytcbk-status-text",
-];
-
-const onLoadFinish = () => {
-  console.log("LOADFINISH");
-  setInputsDisabled(inputIDs, false);
-  document.getElementById("ytcbk-status-text").classList.remove("cleansing");
+const onVideoFetchFinish = () => {
+  setState("READY");
 };
-
-function resolveAfter2Seconds(x) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(x);
-    }, 2000);
-  });
-}
 
 function deletionChecker(ms = 1000) {
   return new Promise((resolve) => {
@@ -116,17 +135,13 @@ function deletionChecker(ms = 1000) {
       let checkResults = document.querySelectorAll(
         '[jsaction="click:.CLIENT"]'
       );
-      console.log("checkresults", checkResults, "ms", ms);
-      console.log(checkResults.length);
       if (checkResults.length > 0) {
         let filtered = Array.from(checkResults).filter((o) =>
           o.innerText.includes("item deleted")
         );
-        console.log("filterlength", filtered.length);
         if (filtered.length > 0) {
           let toastEl = filtered[0];
           toastEl.remove();
-          console.log("deletion confirmed");
           resolve(clearInterval(checker));
         }
       }
@@ -140,11 +155,9 @@ const handleSearch = async (e) => {
     alert("please enter a keyword");
     return;
   }
-  setInputsDisabled(inputIDs, true);
-  document.getElementById("ytcbk-status-text").classList.add("cleansing");
+  setState("CLEANSING");
 
   // start clickin on those x-es
-
   let query = inputVal.toLowerCase();
   let list = document.querySelectorAll(
     '[aria-label="Card showing an activity from YouTube"]'
@@ -157,35 +170,24 @@ const handleSearch = async (e) => {
       .toLowerCase()
       .includes(query)
   );
-  // console.log("found", filtered.length, "items");
   let i = 0;
   while (i < filtered.length) {
     let cardEl = filtered[i];
     let button = cardEl.querySelector("button");
     let string = button.getAttribute("aria-label").toLowerCase();
     if (string.includes(query)) {
-      // console.log("deleting", i + 1, "out of", filtered.length);
+      let split = string.split("delete activity item ");
+      document.getElementById("ytcbk-status-text-additional").textContent =
+        split[split.length - 1];
+      document.getElementById("ytcbk-status-text").textContent = `cleansing ${
+        i + 1
+      } out of ${filtered.length}`;
       button.click();
-      await deletionChecker();
-      // console.log("going next..");
+      await deletionChecker(300);
     }
     i++;
   }
-  console.log("done");
-
-  // let i = 0;
-  // while (i < list.length) {
-  //   let cardEl = list[i];
-  //   let button = cardEl.querySelector("button");
-  //   let string = button.getAttribute("aria-label").toLowerCase();
-  //   if (string.includes(query)) {
-  //     console.log("deleting", cardEl);
-  //     button.click();
-  //     await deletionChecker();
-  //     console.log("going next..");
-  //   }
-  //   i++;
-  // }
+  setState("POST_CLEANSE");
 };
 
 const panelStruct = {
@@ -251,6 +253,20 @@ const panelStruct = {
               tag: "div",
               id: "ytcbk-status-text",
               style: "font-size: 11px",
+              textContent: "loading...",
+            },
+          },
+        },
+        statusBarDeletionStatus: {
+          tag: "div",
+          style: "align-items: center; margin: .5rem 0 0",
+          id: "ytcbk-status-additional",
+          children: {
+            statusText: {
+              tag: "div",
+              id: "ytcbk-status-text-additional",
+              style: "font-size: 11px",
+              textContent: "additional",
             },
           },
         },
@@ -302,9 +318,9 @@ const waitForBuildCompletion = setInterval(() => {
   if (panel) {
     console.log("panel has done building!");
     document.body.appendChild(panel);
-    // setInputsDisabled(inputIDs, true);
+    setState("VIDEO_FETCH");
+    startLoadingMore(() => onVideoFetchFinish);
     clearInterval(waitForBuildCompletion);
-    startLoadingMore(() => onLoadFinish);
   } else {
     console.log("building panel...");
   }
