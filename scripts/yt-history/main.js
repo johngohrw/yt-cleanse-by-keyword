@@ -1,6 +1,6 @@
-import { setInputsDisabled } from "./utils.js";
+import { setInputsDisabled, startLoadingMore } from "./utils.js";
 
-const panelStyleContent = /*css*/`
+const panelStyleContent = /*css*/ `
   :root {
     --panel-bg-color: #222940;
     --panel-border-color: #5e6366;
@@ -36,22 +36,156 @@ const panelStyleContent = /*css*/`
     width: 10px; 
     height: 10px; 
     border-radius: 50%; 
-    background: green; 
+    background: green;
     margin-right: .5rem
+  }
+
+  #ytcbk-status-dot.disabled {
+    background: orange;
+    animation: blink 1s infinite;  
+  }
+
+  #ytcbk-status-text::after {
+    content: "ready to search"
+  }
+  #ytcbk-status-text.disabled::after {
+    content: "loading videos..."
+  }
+  #ytcbk-status-text.disabled.cleansing::after {
+    content: "cleansing in progress, please wait..."
+  }
+
+  .deleting {
+    animation: deleting 1s infinite;
+    background: red;
+  }
+
+  @keyframes deleting {
+    from {
+      opacity: 1
+    }
+  
+    50% {
+      opacity: 0.2
+    }
+  
+    to {
+      opacity: 1
+    }
+  }
+  
+  @keyframes blink {
+    from {
+      opacity: 1
+    }
+  
+    50% {
+      opacity: 0.2
+    }
+  
+    to {
+      opacity: 1
+    }
   }
 `;
 
-const inputIDs = ["ytcbk-search-input", "ytcbk-search-button"];
+const inputIDs = [
+  "ytcbk-search-input",
+  "ytcbk-search-button",
+  "ytcbk-status-dot",
+  "ytcbk-status-text",
+];
 
-const handleSearch = (e) => {
+const onLoadFinish = () => {
+  console.log("LOADFINISH");
+  setInputsDisabled(inputIDs, false);
+  document.getElementById("ytcbk-status-text").classList.remove("cleansing");
+};
+
+function resolveAfter2Seconds(x) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(x);
+    }, 2000);
+  });
+}
+
+function deletionChecker(ms = 1000) {
+  return new Promise((resolve) => {
+    const checker = setInterval(() => {
+      let checkResults = document.querySelectorAll(
+        '[jsaction="click:.CLIENT"]'
+      );
+      console.log("checkresults", checkResults, "ms", ms);
+      console.log(checkResults.length);
+      if (checkResults.length > 0) {
+        let filtered = Array.from(checkResults).filter((o) =>
+          o.innerText.includes("item deleted")
+        );
+        console.log("filterlength", filtered.length);
+        if (filtered.length > 0) {
+          let toastEl = filtered[0];
+          toastEl.remove();
+          console.log("deletion confirmed");
+          resolve(clearInterval(checker));
+        }
+      }
+    }, ms);
+  });
+}
+
+const handleSearch = async (e) => {
   const inputVal = document.getElementById("ytcbk-search-input").value;
   if (inputVal.length < 1) {
-    console.log("please enter a keyword");
+    alert("please enter a keyword");
     return;
   }
   setInputsDisabled(inputIDs, true);
+  document.getElementById("ytcbk-status-text").classList.add("cleansing");
 
   // start clickin on those x-es
+
+  let query = inputVal.toLowerCase();
+  let list = document.querySelectorAll(
+    '[aria-label="Card showing an activity from YouTube"]'
+  );
+
+  let filtered = Array.from(list).filter((item) =>
+    item
+      .querySelector("button")
+      .getAttribute("aria-label")
+      .toLowerCase()
+      .includes(query)
+  );
+  // console.log("found", filtered.length, "items");
+  let i = 0;
+  while (i < filtered.length) {
+    let cardEl = filtered[i];
+    let button = cardEl.querySelector("button");
+    let string = button.getAttribute("aria-label").toLowerCase();
+    if (string.includes(query)) {
+      // console.log("deleting", i + 1, "out of", filtered.length);
+      button.click();
+      await deletionChecker();
+      // console.log("going next..");
+    }
+    i++;
+  }
+  console.log("done");
+
+  // let i = 0;
+  // while (i < list.length) {
+  //   let cardEl = list[i];
+  //   let button = cardEl.querySelector("button");
+  //   let string = button.getAttribute("aria-label").toLowerCase();
+  //   if (string.includes(query)) {
+  //     console.log("deleting", cardEl);
+  //     button.click();
+  //     await deletionChecker();
+  //     console.log("going next..");
+  //   }
+  //   i++;
+  // }
 };
 
 const panelStruct = {
@@ -106,6 +240,7 @@ const panelStruct = {
         statusBar: {
           tag: "div",
           style: "display: flex; align-items: center; margin: .5rem 0",
+          id: "ytcbk-status",
           children: {
             statusDot: {
               tag: "div",
@@ -114,8 +249,8 @@ const panelStruct = {
             },
             statusText: {
               tag: "div",
+              id: "ytcbk-status-text",
               style: "font-size: 11px",
-              textContent: "ready",
             },
           },
         },
@@ -167,11 +302,13 @@ const waitForBuildCompletion = setInterval(() => {
   if (panel) {
     console.log("panel has done building!");
     document.body.appendChild(panel);
+    // setInputsDisabled(inputIDs, true);
     clearInterval(waitForBuildCompletion);
+    startLoadingMore(() => onLoadFinish);
   } else {
     console.log("building panel...");
   }
-}, 20);
+}, 500);
 
 // Array.from(document.querySelectorAll("button")).filter(el => el.innerText === "Load more")
 
