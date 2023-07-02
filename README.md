@@ -1,7 +1,5 @@
-# YT Cleanse By Keyword
+# YT History Cleanser
 
 ![logo](assets/ytcbkPresentable.png)
 
-### Cleanse your YouTube search and watch history by keyword(s).
-
-This is a work in progress.
+### Selectively cleanse your YouTube search and watch history by keyword(s).
