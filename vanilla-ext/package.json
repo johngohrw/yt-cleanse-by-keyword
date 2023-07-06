@@ -1,0 +1,11 @@
+{
+  "name": "yt-cleanse-by-keyword",
+  "version": "0.1.0",
+  "description": "Cleanse your YouTube search and watch history by keyword(s)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

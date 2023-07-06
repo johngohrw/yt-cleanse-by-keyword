@@ -11,7 +11,7 @@ export const setInputsDisabled = (inputIDs, disabled) => {
 };
 
 export const startLoadingMore = (callback) => {
-  let count = 0;
+  const count = 0;
   const modulo = 2;
   const loadMoreClicker = setInterval(() => {
     Array.from(document.querySelectorAll("button"))
@@ -19,7 +19,7 @@ export const startLoadingMore = (callback) => {
       .click();
 
     if (count % modulo === 0) {
-      let idx = document.body.innerText.indexOf(
+      const idx = document.body.innerText.indexOf(
         "Looks like you've reached the end"
       );
       if (idx >= 0) {
@@ -82,31 +82,29 @@ export const setState = (stateID) => {
 // reserved fields. the rest is spread to attributes.
 const reservedKeys = ["tag", "children", "textContent", "bind"];
 export const buildElement = (struct) => {
-  // switch to typescript please
+  // switch to typescript please -_-
   if (!struct?.tag) {
     console.error("struct", struct, "has no tag");
     return null;
   }
-  let el = document.createElement(struct.tag);
+  const el = document.createElement(struct.tag);
 
   // process textcontent
-  if (Object.prototype.hasOwnProperty.call(struct, "textContent")) {
+  if (Object.prototype.hasOwnProperty.call(struct, "textContent"))
     el.textContent = struct.textContent;
-  }
 
   // process children
   if (Object.prototype.hasOwnProperty.call(struct, "children")) {
     Object.entries(struct.children).forEach(([_name, _struct]) => {
-      let _el = buildElement(_struct);
+      const _el = buildElement(_struct);
       _el.setAttribute("name", _name);
       el.appendChild(_el);
     });
   }
 
   // bind events
-  if (Object.prototype.hasOwnProperty.call(struct, "bind")) {
+  if (Object.prototype.hasOwnProperty.call(struct, "bind"))
     el.addEventListener(struct.bind.on, struct.bind.event);
-  }
 
   // spreading other values as attributes
   Object.entries(struct)
@@ -120,15 +118,15 @@ export const buildElement = (struct) => {
 export function deletionChecker(ms = 1000) {
   return new Promise((resolve) => {
     const checker = setInterval(() => {
-      let checkResults = document.querySelectorAll(
+      const checkResults = document.querySelectorAll(
         '[jsaction="click:.CLIENT"]'
       );
       if (checkResults.length > 0) {
-        let filtered = Array.from(checkResults).filter((o) =>
+        const filtered = Array.from(checkResults).filter((o) =>
           o.innerText.includes("item deleted")
         );
         if (filtered.length > 0) {
-          let toastEl = filtered[0];
+          const toastEl = filtered[0];
           toastEl.remove();
           resolve(clearInterval(checker));
         }
