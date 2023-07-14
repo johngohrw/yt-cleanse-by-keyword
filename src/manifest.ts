@@ -14,7 +14,7 @@ export async function getManifest() {
     version: pkg.version,
     description: pkg.description,
     action: {
-      default_icon: './assets/icon-512.png',
+      default_icon: './assets/icon512.png',
       default_popup: './dist/popup/index.html',
     },
     options_ui: {
@@ -30,9 +30,9 @@ export async function getManifest() {
           service_worker: './dist/background/index.mjs',
         },
     icons: {
-      16: './assets/icon-512.png',
-      48: './assets/icon-512.png',
-      128: './assets/icon-512.png',
+      16: './assets/icon512.png',
+      48: './assets/icon512.png',
+      128: './assets/icon512.png',
     },
     permissions: [
       'tabs',
@@ -43,7 +43,7 @@ export async function getManifest() {
     content_scripts: [
       {
         matches: [
-          '<all_urls>',
+          '*://myactivity.google.com/product/youtube*',
         ],
         js: [
           'dist/contentScripts/index.global.js',
@@ -52,7 +52,7 @@ export async function getManifest() {
     ],
     web_accessible_resources: [
       {
-        resources: ['dist/contentScripts/style.css'],
+        resources: ['dist/contentScripts/style.css', 'assets'],
         matches: ['<all_urls>'],
       },
     ],

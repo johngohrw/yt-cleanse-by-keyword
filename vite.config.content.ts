@@ -31,6 +31,8 @@ export default defineConfig({
         entryFileNames: 'index.global.js',
         extend: true,
       },
+
     },
+
   },
 })
