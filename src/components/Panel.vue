@@ -1,12 +1,16 @@
 <script setup lang="ts">
+import Search from './Screens/Search.vue'
+
 const state = ref(0)
+const results: number[] = reactive([])
 
 const lol = document.getElementsByTagName('span')
 // eslint-disable-next-line no-console
 console.log('>', lol)
 
-function nice() {
+function handleClick() {
   state.value += 1
+  results.push(state.value)
 }
 </script>
 
@@ -28,11 +32,11 @@ function nice() {
 
     <!-- content -->
     <div class="w-full flex p-[12px] flex-col items-center gap-[24px] self-stretch">
-      <button @click="nice">
-        nice
+      <button @click="handleClick">
+        add video
       </button>
       {{ state }}
-      <Search />
+      <Search :results="results" />
     </div>
   </div>
 </template>
